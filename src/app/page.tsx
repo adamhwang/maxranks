@@ -1,32 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { pokemon } from "@/utils/gamemaster";
-import { BattleConfig, PokeStats, rankPokemon } from "@/utils/rank";
+import {
+  BattleConfig,
+  getAllPokemon,
+  PokeStats,
+  rankPokemon,
+} from "@/utils/rank";
 
 const myPokemons: { [group: string]: PokeStats[] } = {
-  "All Pokemon": pokemon
-    .map((p) => {
-      const stats: PokeStats[] = [];
-      if (p.dmax) {
-        stats.push({
-          name: p.name,
-          level: 40,
-          iv: [15, 15, 15],
-          maxMove: "D3",
-        });
-      }
-      if (p.gmax) {
-        stats.push({
-          name: p.name,
-          level: 40,
-          iv: [15, 15, 15],
-          maxMove: "G3",
-        });
-      }
-      return stats;
-    })
-    .flat(),
+  "All Pokemon": getAllPokemon(),
 };
 
 export default function Home() {

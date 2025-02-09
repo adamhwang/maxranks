@@ -5,7 +5,14 @@ import {
   getMaxMovePower,
   MaxMove,
 } from "./damage";
-import { getCM, getFM, getMon, PokemonType, WeatherType } from "./gamemaster";
+import {
+  getCM,
+  getFM,
+  getMon,
+  pokemon,
+  PokemonType,
+  WeatherType,
+} from "./gamemaster";
 
 export type BattleConfig = {
   bossName: string;
@@ -25,6 +32,28 @@ export type PokeStats = {
   iv: [attack: number, defense: number, stamina: number];
   maxMove: MaxMove;
 };
+
+export const getAllPokemon = () =>
+  pokemon.flatMap((p) => {
+    const stats: PokeStats[] = [];
+    if (p.dmax) {
+      stats.push({
+        name: p.name,
+        level: 40,
+        iv: [15, 15, 15],
+        maxMove: "D3",
+      });
+    }
+    if (p.gmax) {
+      stats.push({
+        name: p.name,
+        level: 40,
+        iv: [15, 15, 15],
+        maxMove: "G3",
+      });
+    }
+    return stats;
+  });
 
 export const rankPokemon = (myPokemon: PokeStats[], settings: BattleConfig) => {
   const bossMon = getMon(settings.bossName);
