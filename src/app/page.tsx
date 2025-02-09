@@ -44,7 +44,7 @@ export default function Home() {
 
   return Object.keys(myPokemons).map((group) => {
     const ranks = rankPokemon(myPokemons[group], battleConfig);
-    const bossCMs = Object.keys(ranks[0].tankRanks);
+    const bossCMs = Object.keys(ranks[0].tankStats);
 
     return (
       <div key={group}>
@@ -58,17 +58,18 @@ export default function Home() {
               <th>Fast Move</th>
               <th>Fast Type</th>
               <th>Max Move Damage</th>
+              <th>Attacker Rank</th>
               <th>Fast Move Damage</th>
               {bossCMs.map((cm, i) => (
                 <th key={`${group}-fm-${i}`}>{cm}</th>
               ))}
-              <th>Average Particles</th>
+              <th>Tank Rank</th>
             </tr>
           </thead>
           <tbody>
             {ranks
               .toSorted((a, b) => b.mmDamage - a.mmDamage) // by attacker
-              // .toSorted((a, b) => b.avgFastMoves - a.avgFastMoves || b.fmDamage - a.fmDamage || b.mmDamage - a.mmDamage) // by tankiness
+              // .toSorted((a, b) => a.bestTankRank - b.bestTankRank || b.fmDamage - a.fmDamage || b.mmDamage - a.mmDamage) // by tankiness
               .map(
                 (
                   {
@@ -79,9 +80,10 @@ export default function Home() {
                     fm,
                     fmType,
                     mmDamage,
+                    attackRank,
                     fmDamage,
-                    tankRanks,
-                    avgFastMoves,
+                    tankStats,
+                    bestTankRank,
                   },
                   i,
                 ) => {
@@ -94,15 +96,16 @@ export default function Home() {
                       <td>{fm}</td>
                       <td>{fmType}</td>
                       <td>{mmDamage}</td>
+                      <td>{attackRank}</td>
                       <td>{fmDamage}</td>
                       {bossCMs.map((cm, j) => {
                         return (
                           <td key={`${group}-${i}.${j}`}>
-                            {tankRanks[cm].fmCount}
+                            {tankStats[cm].fmCount}
                           </td>
                         );
                       })}
-                      <td>{avgFastMoves}</td>
+                      <td>{bestTankRank}</td>
                     </tr>
                   );
                 },

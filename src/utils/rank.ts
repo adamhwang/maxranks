@@ -6,7 +6,6 @@ import {
   MaxMove,
 } from "./damage";
 import { getCM, getFM, getMon, PokemonType, WeatherType } from "./gamemaster";
-import { average, median } from "./math";
 
 export type BattleConfig = {
   bossName: string;
@@ -42,7 +41,10 @@ export const rankPokemon = (myPokemon: PokeStats[], settings: BattleConfig) => {
     .filter((cm) => !!cm);
   const bossStats = combineStats(bossMon.stats, [15, 15, 15], bossCPM);
 
-  return myPokemon
+  const attackRanks = new Set<number>();
+  const tankRanks = new Map<string, Set<number>>();
+
+  const ranks = myPokemon
     .map((my) => {
       const mon = getMon(my.name);
       if (!mon) {
@@ -82,6 +84,9 @@ export const rankPokemon = (myPokemon: PokeStats[], settings: BattleConfig) => {
           bossStats.defense,
           bossMon.types as PokemonType[],
         );
+
+        attackRanks.add(mmDamage);
+
         const fmDamage =
           Math.floor(settings.attackRate / fm.duration) *
           getDamange(
@@ -94,8 +99,7 @@ export const rankPokemon = (myPokemon: PokeStats[], settings: BattleConfig) => {
             bossMon.types as PokemonType[],
           );
 
-        const fmCounts: number[] = [];
-        const tankRanks = bossCMs.reduce(
+        const tankStats = bossCMs.reduce(
           (acc, cm) => {
             const spreadDamage = getDamange(
               bossMon.types as PokemonType[],
@@ -123,18 +127,17 @@ export const rankPokemon = (myPokemon: PokeStats[], settings: BattleConfig) => {
             // TODO: calculate max particles as 0.5% of boss hp
             // TODO: compare max particles from fm + cm
             const fmCount = Math.floor(tol / fm.duration);
-            fmCounts.push(fmCount);
+            tankRanks.set(
+              cm.name,
+              (tankRanks.get(cm.name) ?? new Set<number>()).add(fmCount),
+            );
             acc[cm.name] = {
               fmCount,
             };
             return acc;
           },
-          {} as { [cm: string]: { fmCount: number } },
+          {} as { [cm: string]: { fmCount: number; tankRank?: number } },
         );
-        const avgFastMoves = average([
-          average(fmCounts),
-          median(fmCounts) ?? 0,
-        ]);
 
         return {
           name: `${my.maxMove[0]}Max ${mon.name}`,
@@ -144,12 +147,46 @@ export const rankPokemon = (myPokemon: PokeStats[], settings: BattleConfig) => {
           fm: fm.name,
           fmType: fm.type,
           mmDamage,
+          attackRank: Number.POSITIVE_INFINITY,
           fmDamage,
-          tankRanks,
-          avgFastMoves,
+          tankStats,
+          bestTankRank: Number.POSITIVE_INFINITY,
         };
       });
     })
     .flat()
     .filter((o) => !!o);
+
+  // Create maps with proper ranking (handling ties)
+  const attackRankMap = new Map<number, number>();
+  [...attackRanks]
+    .sort((a, b) => b - a)
+    .forEach((value, index) => attackRankMap.set(value, index + 1));
+
+  const tankRankMap = new Map<string, Map<number, number>>();
+  tankRanks.forEach((tankRank, cm) => {
+    [...tankRank]
+      .sort((a, b) => b - a)
+      .forEach((value, index) => {
+        tankRankMap.set(
+          cm,
+          (tankRankMap.get(cm) ?? new Map<number, number>()).set(
+            value,
+            index + 1,
+          ),
+        );
+      });
+  });
+
+  for (const rank of ranks) {
+    rank.attackRank = attackRankMap.get(rank.mmDamage) ?? rank.attackRank;
+    Object.entries(rank.tankStats).forEach(([cm, tankStat]) => {
+      tankStat.tankRank = tankRankMap.get(cm)?.get(tankStat.fmCount);
+      if (tankStat.tankRank) {
+        rank.bestTankRank = Math.min(rank.bestTankRank, tankStat.tankRank);
+      }
+    });
+  }
+
+  return ranks;
 };
