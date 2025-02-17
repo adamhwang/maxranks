@@ -27,6 +27,10 @@ const pokemonTypes = [
 
 export type PokemonType = (typeof pokemonTypes)[number];
 
+export type Pokemon = ReturnType<typeof getPokemon> &
+  ReturnType<typeof getMaxForms>[0][0] &
+  Partial<ReturnType<typeof getGMaxMoves>[0]>;
+
 const proper = (str: string) =>
   str
     ?.replace(/_/g, " ")
@@ -205,9 +209,7 @@ async function loadGameMaster() {
   console.log("Loading game master...");
   const { data: gameMaster } = await axios.get(url);
 
-  const pokemon: (ReturnType<typeof getPokemon> &
-    ReturnType<typeof getMaxForms>[0][0] &
-    Partial<ReturnType<typeof getGMaxMoves>[0]>)[] = [];
+  const pokemonByNameForm: { [name: string]: { [form: string]: Pokemon } } = {};
   const fastMoves: ReturnType<typeof getMove>[] = [];
   const chargeMoves: ReturnType<typeof getMove>[] = [];
   const typeEffectives: ReturnType<typeof getTypeEffective> = {};
@@ -225,7 +227,9 @@ async function loadGameMaster() {
       templateId.substring(6, 13) === "POKEMON" &&
       !templateId.includes("REVERSION")
     ) {
-      pokemon.push(getPokemon(template));
+      const mon = getPokemon(template);
+      pokemonByNameForm[mon.name] = pokemonByNameForm[mon.name] ?? {};
+      pokemonByNameForm[mon.name][mon.form] = mon;
     }
 
     // fast and charged moves
@@ -267,23 +271,26 @@ async function loadGameMaster() {
   }
 
   // filter non-Dynamax, non-Gigantamax pokemon
-  for (let i = pokemon.length - 1; i >= 0; i--) {
-    const mon = pokemon[i];
+  const pokemon = Object.entries(pokemonByNameForm).flatMap(
+    ([name, pokemonByForm]) =>
+      Object.entries(pokemonByForm).reduce((acc, [form, mon]) => {
+        // add gmaxMoveName and gmaxMoveType field
+        if (gmaxMoveMap[name]?.[form]) {
+          Object.assign(mon, gmaxMoves[gmaxMoveMap[name][form].move]);
+        }
 
-    // add gmaxMoveName and gmaxMoveType field
-    if (gmaxMoveMap[mon.name]?.[mon.form]) {
-      Object.assign(mon, gmaxMoves[gmaxMoveMap[mon.name][mon.form].move]);
-    }
+        // add dmax and dmax fields
+        if (maxForms[name]?.[form]) {
+          Object.assign(mon, maxForms[name][form]);
+        }
 
-    // add dmax and dmax fields
-    if (maxForms[mon.name]?.[mon.form]) {
-      Object.assign(mon, maxForms[mon.name][mon.form]);
-    }
+        if (mon.dmax || mon.gmax) {
+          acc.push(mon);
+        }
 
-    if (!mon.dmax && !mon.gmax) {
-      pokemon.splice(i, 1);
-    }
-  }
+        return acc;
+      }, [] as Pokemon[]),
+  );
 
   console.log("Game master successfully loaded...");
 
