@@ -174,7 +174,7 @@ export const rankPokemon = (myPokemon: PokeStats[], settings: BattleConfig) => {
           hp,
           maxPower,
           fm: fm.name,
-          fmType: fm.type,
+          maxType,
           mmDamage,
           attackRank: Number.POSITIVE_INFINITY,
           fmDamage,

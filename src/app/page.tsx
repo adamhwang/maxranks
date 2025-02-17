@@ -39,7 +39,7 @@ export default function Home() {
               <th>HP</th>
               <th>Max Power</th>
               <th>Fast Move</th>
-              <th>Fast Type</th>
+              <th>Max Move Type</th>
               <th>Max Move Damage</th>
               <th>Attacker Rank</th>
               <th>Fast Move Damage</th>
@@ -61,7 +61,7 @@ export default function Home() {
                     hp,
                     maxPower,
                     fm,
-                    fmType,
+                    maxType,
                     mmDamage,
                     attackRank,
                     fmDamage,
@@ -77,7 +77,7 @@ export default function Home() {
                       <td>{hp}</td>
                       <td>{maxPower}</td>
                       <td>{fm}</td>
-                      <td>{fmType}</td>
+                      <td>{maxType}</td>
                       <td>{mmDamage}</td>
                       <td>{attackRank}</td>
                       <td>{fmDamage}</td>
