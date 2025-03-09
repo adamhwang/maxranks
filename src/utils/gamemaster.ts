@@ -1,6 +1,6 @@
 import data, { Pokemon, PokemonType } from "@/data/gamemaster.preval";
 
-const { pokemon, fm, cm, typeEffectives, weatherBoosts } = data;
+const { pokemon, pokemonTypes, fm, cm, typeEffectives, weatherBoosts } = data;
 
 export type WeatherType = keyof typeof weatherBoosts;
 
@@ -35,4 +35,4 @@ export function getTypeMultiplier(
   return mult;
 }
 
-export { pokemon, type Pokemon, type PokemonType };
+export { pokemon, pokemonTypes, type Pokemon, type PokemonType };

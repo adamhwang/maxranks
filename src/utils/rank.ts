@@ -10,6 +10,7 @@ import {
   getFM,
   getMon,
   pokemon,
+  pokemonTypes,
   Pokemon,
   PokemonType,
   WeatherType,
@@ -63,6 +64,13 @@ export const getAllPokemon = () =>
     }
     return stats;
   });
+
+export const rankAllPokemon = () => {
+  const allPokemon = getAllPokemon();
+  return generateBosses().flatMap((boss) =>
+    rankPokemon(allPokemon, boss, "G6", defaultBattleConfig),
+  );
+};
 
 export const rankPokemon = (
   myPokemon: PokeStats[],
@@ -232,4 +240,41 @@ export const rankPokemon = (
   }
 
   return ranks;
+};
+
+const generateBosses = () => {
+  const allTypes = [
+    ...pokemonTypes.map((type) => [type]),
+    ...pokemonTypes.flatMap((a, i) =>
+      pokemonTypes.slice(i + 1).map((b) => [a, b] as [string, string]),
+    ),
+  ];
+  const [bestStats, allFastMoves, allChargeMoves] = pokemon.reduce(
+    ([stats, fm, cm], mon) => [
+      {
+        baseAttack: Math.max(stats.baseAttack, mon.stats.baseAttack),
+        baseDefense: Math.max(stats.baseDefense, mon.stats.baseDefense),
+        baseStamina: Math.max(stats.baseStamina, mon.stats.baseStamina),
+      },
+      [...fm, ...mon.fastMoves],
+      [...cm, ...mon.chargeMoves],
+    ],
+    [
+      {
+        baseAttack: 0,
+        baseDefense: 0,
+        baseStamina: 0,
+      } as ArrayElement<typeof pokemon>["stats"],
+      [] as string[],
+      [] as string[],
+    ],
+  );
+  return allTypes.map<Pokemon>((types) => ({
+    name: types.join(" | "),
+    form: "Normal",
+    types,
+    stats: bestStats,
+    fastMoves: [...new Set(allFastMoves)],
+    chargeMoves: [...new Set(allChargeMoves)],
+  }));
 };

@@ -310,6 +310,7 @@ async function loadGameMaster() {
     ),
     typeEffectives,
     weatherBoosts,
+    pokemonTypes,
   };
 }
 
