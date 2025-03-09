@@ -3,30 +3,29 @@
 import { useState } from "react";
 import {
   BattleConfig,
+  defaultBattleConfig,
   getAllPokemon,
   PokeStats,
   rankPokemon,
 } from "@/utils/rank";
+import { BossTier } from "@/utils/cpm";
 
 const myPokemons: { [group: string]: PokeStats[] } = {
   "All Pokemon": getAllPokemon(),
 };
 
 export default function Home() {
-  const [battleConfig] = useState<BattleConfig>({
-    bossName: "Moltres",
-    bossTier: "D5",
-    targetedRate: 0.5,
-    targetDamageMultiplier: 2,
-    attackRate: 10000,
-    dodgeRate: 1,
-    dodgeMultiplier: 0.5,
-    trainers: 4,
-    weather: "Fog",
-  });
+  const [bossName] = useState<string>("Charizard");
+  const [bossTier] = useState<BossTier>("G6");
+  const [battleConfig] = useState<BattleConfig>(defaultBattleConfig);
 
   return Object.keys(myPokemons).map((group) => {
-    const ranks = rankPokemon(myPokemons[group], battleConfig);
+    const ranks = rankPokemon(
+      myPokemons[group],
+      bossName,
+      bossTier,
+      battleConfig,
+    );
     const bossCMs = Object.keys(ranks[0].tankStats);
 
     return (

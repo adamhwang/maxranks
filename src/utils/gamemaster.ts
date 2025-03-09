@@ -1,4 +1,4 @@
-import data, { PokemonType } from "@/data/gamemaster.preval";
+import data, { Pokemon, PokemonType } from "@/data/gamemaster.preval";
 
 const { pokemon, fm, cm, typeEffectives, weatherBoosts } = data;
 
@@ -35,4 +35,4 @@ export function getTypeMultiplier(
   return mult;
 }
 
-export { pokemon, type PokemonType };
+export { pokemon, type Pokemon, type PokemonType };

@@ -10,13 +10,12 @@ import {
   getFM,
   getMon,
   pokemon,
+  Pokemon,
   PokemonType,
   WeatherType,
 } from "./gamemaster";
 
 export type BattleConfig = {
-  bossName: string;
-  bossTier: BossTier;
   targetedRate: number;
   targetDamageMultiplier: number;
   attackRate: number;
@@ -24,6 +23,16 @@ export type BattleConfig = {
   dodgeMultiplier: number;
   trainers: number;
   weather: WeatherType;
+};
+
+export const defaultBattleConfig: BattleConfig = {
+  targetedRate: 0.5,
+  targetDamageMultiplier: 2,
+  attackRate: 10000,
+  dodgeRate: 1,
+  dodgeMultiplier: 0.5,
+  trainers: 4,
+  weather: "Extreme",
 };
 
 export type PokeStats = {
@@ -55,14 +64,19 @@ export const getAllPokemon = () =>
     return stats;
   });
 
-export const rankPokemon = (myPokemon: PokeStats[], settings: BattleConfig) => {
-  const bossMon = getMon(settings.bossName);
+export const rankPokemon = (
+  myPokemon: PokeStats[],
+  boss: Pokemon | string,
+  bossTier: BossTier,
+  settings: BattleConfig,
+) => {
+  const bossMon = typeof boss === "string" ? getMon(boss) : boss;
   if (!bossMon) {
-    throw `Unkonwn pokemon: ${settings.bossName}`;
+    throw `Unkonwn pokemon: ${boss}`;
   }
-  const bossCPM = getBossCPM(settings.bossTier);
+  const bossCPM = getBossCPM(bossTier);
   if (!bossCPM) {
-    throw `Unkonwn max battle tier: ${settings.bossTier}`;
+    throw `Unkonwn max battle tier: ${bossTier}`;
   }
 
   const bossCMs = (bossMon.chargeMoves ?? [])
