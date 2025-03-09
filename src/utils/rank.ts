@@ -19,7 +19,6 @@ import {
 export type BattleConfig = {
   targetedRate: number;
   targetDamageMultiplier: number;
-  attackRate: number;
   dodgeRate: number;
   dodgeMultiplier: number;
   trainers: number;
@@ -29,7 +28,6 @@ export type BattleConfig = {
 export const defaultBattleConfig: BattleConfig = {
   targetedRate: 0.5,
   targetDamageMultiplier: 2,
-  attackRate: 10000,
   dodgeRate: 1,
   dodgeMultiplier: 0.5,
   trainers: 4,
@@ -87,13 +85,14 @@ export const rankPokemon = (
     throw `Unkonwn max battle tier: ${bossTier}`;
   }
 
+  // https://www.reddit.com/r/TheSilphRoad/comments/1ier5h0/new_year_new_bugs_discoveries_on_combat_mechanics/
+  const baseAttackRate =
+    bossTier == "G6" ? 3000 + 2000 * settings.targetedRate : 10000;
+
   const bossCMs = (bossMon.chargeMoves ?? [])
     .map((cm) => getCM(cm))
     .filter((cm) => !!cm);
   const bossStats = combineStats(bossMon.stats, [15, 15, 15], bossCPM);
-
-  const attackRanks = new Set<number>();
-  const tankRanks = new Map<string, Set<number>>();
 
   const ranks = myPokemon
     .map((my) => {
@@ -136,20 +135,8 @@ export const rankPokemon = (
           bossMon.types as PokemonType[],
         );
 
-        attackRanks.add(mmDamage);
-
-        const fmDamage =
-          Math.floor(settings.attackRate / fm.duration) *
-          getDamange(
-            mon.types as PokemonType[],
-            fm.type as PokemonType,
-            attack,
-            fm.power,
-            settings.weather,
-            bossStats.defense,
-            bossMon.types as PokemonType[],
-          );
-
+        let avgFmDamage = 0;
+        let avgFmCount = 0;
         const tankStats = bossCMs.reduce(
           (acc, cm) => {
             const spreadDamage = getDamange(
@@ -174,20 +161,31 @@ export const rankPokemon = (
               spreadDamage * (1 - settings.targetedRate) +
               targetedDamage * settings.targetedRate;
             const attacksTanked = getAttacksTanked(hp, bossDamage);
-            const tol = attacksTanked * settings.attackRate;
+            const tof = attacksTanked * (baseAttackRate + cm.duration);
+
+            const fmDamage =
+              Math.floor(tof / fm.duration) *
+              getDamange(
+                mon.types as PokemonType[],
+                fm.type as PokemonType,
+                attack,
+                fm.power,
+                settings.weather,
+                bossStats.defense,
+                bossMon.types as PokemonType[],
+              );
+
             // TODO: calculate max particles as 0.5% of boss hp
             // TODO: compare max particles from fm + cm
-            const fmCount = Math.floor(tol / fm.duration);
-            tankRanks.set(
-              cm.name,
-              (tankRanks.get(cm.name) ?? new Set<number>()).add(fmCount),
-            );
-            acc[cm.name] = {
-              fmCount,
-            };
+            const fmCount = Math.floor(tof / fm.duration);
+            avgFmCount += fmCount / bossCMs.length;
+            avgFmDamage += fmDamage / bossCMs.length;
+            acc[cm.name] = { tof, fmCount, fmDamage };
             return acc;
           },
-          {} as { [cm: string]: { fmCount: number; tankRank?: number } },
+          {} as {
+            [cm: string]: { tof: number; fmCount: number; fmDamage: number };
+          },
         );
 
         return {
@@ -198,46 +196,14 @@ export const rankPokemon = (
           fm: fm.name,
           maxType,
           mmDamage,
-          attackRank: Number.POSITIVE_INFINITY,
-          fmDamage,
           tankStats,
-          bestTankRank: Number.POSITIVE_INFINITY,
+          avgFmCount,
+          avgFmDamage,
         };
       });
     })
     .flat()
     .filter((o) => !!o);
-
-  // Create maps with proper ranking (handling ties)
-  const attackRankMap = new Map<number, number>();
-  [...attackRanks]
-    .sort((a, b) => b - a)
-    .forEach((value, index) => attackRankMap.set(value, index + 1));
-
-  const tankRankMap = new Map<string, Map<number, number>>();
-  tankRanks.forEach((tankRank, cm) => {
-    [...tankRank]
-      .sort((a, b) => b - a)
-      .forEach((value, index) => {
-        tankRankMap.set(
-          cm,
-          (tankRankMap.get(cm) ?? new Map<number, number>()).set(
-            value,
-            index + 1,
-          ),
-        );
-      });
-  });
-
-  for (const rank of ranks) {
-    rank.attackRank = attackRankMap.get(rank.mmDamage) ?? rank.attackRank;
-    Object.entries(rank.tankStats).forEach(([cm, tankStat]) => {
-      tankStat.tankRank = tankRankMap.get(cm)?.get(tankStat.fmCount);
-      if (tankStat.tankRank) {
-        rank.bestTankRank = Math.min(rank.bestTankRank, tankStat.tankRank);
-      }
-    });
-  }
 
   return ranks;
 };

@@ -14,6 +14,13 @@ const myPokemons: { [group: string]: PokeStats[] } = {
   "All Pokemon": getAllPokemon(),
 };
 
+// toFixed with rounding: https://stackoverflow.com/questions/10015027/javascript-tofixed-not-rounding
+function toFixed(num: number, precision: number) {
+  return (+(Math.round(+(num + "e" + precision)) + "e" + -precision)).toFixed(
+    precision,
+  );
+}
+
 export default function Home() {
   const [bossName] = useState<string>("Charizard");
   const [bossTier] = useState<BossTier>("G6");
@@ -40,18 +47,17 @@ export default function Home() {
               <th>Fast Move</th>
               <th>Max Move Type</th>
               <th>Max Move Damage</th>
-              <th>Attacker Rank</th>
-              <th>Fast Move Damage</th>
               {bossCMs.map((cm, i) => (
                 <th key={`${group}-fm-${i}`}>{cm}</th>
               ))}
-              <th>Tank Rank</th>
+              <th>Average FMs</th>
+              <th>FM Damage</th>
             </tr>
           </thead>
           <tbody>
             {ranks
               .toSorted((a, b) => b.mmDamage - a.mmDamage) // by attacker
-              // .toSorted((a, b) => a.bestTankRank - b.bestTankRank || b.fmDamage - a.fmDamage || b.mmDamage - a.mmDamage) // by tankiness
+              // .toSorted((a, b) => b.avgFmCount - a.avgFmCount || b.avgFmDamage - a.avgFmDamage || b.mmDamage - a.mmDamage) // by tankiness
               .map(
                 (
                   {
@@ -62,10 +68,9 @@ export default function Home() {
                     fm,
                     maxType,
                     mmDamage,
-                    attackRank,
-                    fmDamage,
                     tankStats,
-                    bestTankRank,
+                    avgFmCount,
+                    avgFmDamage,
                   },
                   i,
                 ) => {
@@ -78,8 +83,6 @@ export default function Home() {
                       <td>{fm}</td>
                       <td>{maxType}</td>
                       <td>{mmDamage}</td>
-                      <td>{attackRank}</td>
-                      <td>{fmDamage}</td>
                       {bossCMs.map((cm, j) => {
                         return (
                           <td key={`${group}-${i}.${j}`}>
@@ -87,7 +90,8 @@ export default function Home() {
                           </td>
                         );
                       })}
-                      <td>{bestTankRank}</td>
+                      <td>{toFixed(avgFmCount, 0)}</td>
+                      <td>{toFixed(avgFmDamage, 0)}</td>
                     </tr>
                   );
                 },
