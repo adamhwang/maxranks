@@ -37,7 +37,7 @@ export default function Home() {
 
     return (
       <div key={group}>
-        <table>
+        <table className="table table-zebra table-pin-rows">
           <thead>
             <tr>
               <th>Pokemon</th>
