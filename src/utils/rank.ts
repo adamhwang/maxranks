@@ -236,6 +236,7 @@ const generateBosses = () => {
     ],
   );
   return allTypes.map<Pokemon>((types) => ({
+    number: -1,
     name: types.join(" | "),
     form: "Normal",
     types,

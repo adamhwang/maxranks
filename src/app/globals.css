@@ -4,3 +4,8 @@
     light --default,
     dark --prefersdark;
 }
+
+.dmax-icon {
+  filter: brightness(0.6) contrast(1.2) sepia(0.25)
+    drop-shadow(0 0 3px #ff000088);
+}

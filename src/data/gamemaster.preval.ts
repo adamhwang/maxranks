@@ -47,7 +47,7 @@ const properType = (type: string) => proper(type?.substring(13));
 const properMove = (move: string) => proper(String(move).replace(/_FAST$/, ""));
 
 // eslint-disable-next-line  @typescript-eslint/no-explicit-any
-const getPokemon = (template: any) => {
+const getPokemon = (template: any, number: number) => {
   const {
     pokemonId,
     type,
@@ -70,6 +70,7 @@ const getPokemon = (template: any) => {
     form: string;
   } = template.data.pokemonSettings;
   return {
+    number,
     name: proper(pokemonId),
     form: properForm(pokemonId, form),
     types: [properType(type), properType(type2)].filter((t) => !!t),
@@ -190,7 +191,6 @@ const getGMaxMoves = (template: any) => {
     template.data.moveSettings;
   return {
     [movementId]: {
-      gmax: true, // sometimes max forms lags behind gmax moves
       gmaxMoveType: properType(pokemonType),
       gmaxMoveName: proper(vfxName).replace("Gmax", "G-Max"),
     },
@@ -222,12 +222,9 @@ async function loadGameMaster() {
     const { templateId } = template;
 
     // pokemon
-    if (
-      templateId.startsWith("V") &&
-      templateId.substring(6, 13) === "POKEMON" &&
-      !templateId.includes("REVERSION")
-    ) {
-      const mon = getPokemon(template);
+    const match = templateId.match(/^V(\d{4})_POKEMON_.*$/);
+    if (match && !templateId.endsWith("REVERSION")) {
+      const mon = getPokemon(template, +match[1]);
       pokemonByNameForm[mon.name] = pokemonByNameForm[mon.name] ?? {};
       pokemonByNameForm[mon.name][mon.form] = mon;
     }
@@ -284,9 +281,7 @@ async function loadGameMaster() {
           Object.assign(mon, maxForms[name][form]);
         }
 
-        if (mon.dmax || mon.gmax) {
-          acc.push(mon);
-        }
+        acc.push(mon);
 
         return acc;
       }, [] as Pokemon[]),
