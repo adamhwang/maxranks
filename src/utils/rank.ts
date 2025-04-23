@@ -17,6 +17,8 @@ import {
 } from "./gamemaster";
 
 export type BattleConfig = {
+  bossName: string;
+  bossTier: BossTier;
   targetedRate: number;
   targetDamageMultiplier: number;
   dodgeRate: number;
@@ -26,6 +28,8 @@ export type BattleConfig = {
 };
 
 export const defaultBattleConfig: BattleConfig = {
+  bossName: "Entei",
+  bossTier: "D5",
   targetedRate: 0.5,
   targetDamageMultiplier: 2,
   dodgeRate: 1,
@@ -66,28 +70,27 @@ export const getAllPokemon = () =>
 export const rankAllPokemon = () => {
   const allPokemon = getAllPokemon();
   return generateBosses().flatMap((boss) =>
-    rankPokemon(allPokemon, boss, "G6", defaultBattleConfig),
+    rankPokemon(allPokemon, {
+      ...defaultBattleConfig,
+      bossName: boss.name,
+      bossTier: "D5",
+    }),
   );
 };
 
-export const rankPokemon = (
-  myPokemon: PokeStats[],
-  boss: Pokemon | string,
-  bossTier: BossTier,
-  settings: BattleConfig,
-) => {
-  const bossMon = typeof boss === "string" ? getMon(boss) : boss;
+export const rankPokemon = (myPokemon: PokeStats[], settings: BattleConfig) => {
+  const bossMon = getMon(settings.bossName);
   if (!bossMon) {
-    throw `Unkonwn pokemon: ${boss}`;
+    throw `Unkonwn pokemon: ${settings.bossName}`;
   }
-  const bossCPM = getBossCPM(bossTier);
+  const bossCPM = getBossCPM(settings.bossTier);
   if (!bossCPM) {
-    throw `Unkonwn max battle tier: ${bossTier}`;
+    throw `Unkonwn max battle tier: ${settings.bossTier}`;
   }
 
   // https://www.reddit.com/r/TheSilphRoad/comments/1ier5h0/new_year_new_bugs_discoveries_on_combat_mechanics/
   const baseAttackRate =
-    bossTier == "G6" ? 3000 + 2000 * settings.targetedRate : 10000;
+    settings.bossTier == "G6" ? 3000 + 2000 * settings.targetedRate : 10000;
 
   const bossCMs = (bossMon.chargeMoves ?? [])
     .map((cm) => getCM(cm))

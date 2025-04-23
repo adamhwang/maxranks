@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
 
@@ -18,7 +19,9 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="https://emojicdn.elk.sh/👾" />
       </head>
-      <body>{children}</body>
+      <body>
+        <NuqsAdapter>{children}</NuqsAdapter>
+      </body>
       <GoogleAnalytics gaId="G-ZQH86Z6WN6" />
     </html>
   );

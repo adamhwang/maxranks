@@ -1,6 +1,7 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { Fragment } from "react";
+import { useQueryState } from "nuqs";
 import {
   BattleConfig,
   defaultBattleConfig,
@@ -8,15 +9,12 @@ import {
   PokeStats,
   rankPokemon,
 } from "@/utils/rank";
-import { BossTier } from "@/utils/cpm";
 
 import { getMon } from "../utils/gamemaster";
 import dmax_png from "../assets/dmax.png";
 import gmax_png from "../assets/gmax.png";
 
-const myPokemons: { [group: string]: PokeStats[] } = {
-  "All Pokemon": getAllPokemon(),
-};
+type GroupedPokeStats = { [group: string]: PokeStats[] };
 
 // toFixed with rounding: https://stackoverflow.com/questions/10015027/javascript-tofixed-not-rounding
 function toFixed(num: number, precision: number) {
@@ -26,11 +24,18 @@ function toFixed(num: number, precision: number) {
 }
 
 export default function Home() {
-  const [bossName] = useState<string>("Entei");
-  const [bossTier] = useState<BossTier>("D5");
-  const [battleConfig] = useState<BattleConfig>(defaultBattleConfig);
+  const [battleConfig] = useQueryState<BattleConfig>("config", {
+    parse: JSON.parse,
+    serialize: JSON.stringify,
+    defaultValue: defaultBattleConfig,
+  });
+  const [myPokemon] = useQueryState<GroupedPokeStats>("pokemon", {
+    parse: JSON.parse,
+    serialize: JSON.stringify,
+    defaultValue: {},
+  });
 
-  const boss = getMon(bossName)!;
+  const boss = getMon(battleConfig.bossName)!;
 
   const getIconUrl = (
     form: string,
@@ -43,22 +48,20 @@ export default function Home() {
   };
 
   const getGroups = () =>
-    Object.keys(myPokemons).map((group, i) => {
-      const ranks = rankPokemon(
-        myPokemons[group],
-        boss ?? bossName,
-        bossTier,
-        battleConfig,
-      );
+    Object.entries({
+      ...myPokemon,
+      "All Pokemon": getAllPokemon(),
+    }).map(([groupName, group], i) => {
+      const ranks = rankPokemon(group, battleConfig);
       const bossCMs = Object.keys(ranks[0].tankStats);
 
       return (
-        <Fragment key={group}>
+        <Fragment key={`group-${i}`}>
           <input
             type="radio"
             name="pokemon-tabs"
             className="tab"
-            aria-label={group}
+            aria-label={groupName}
             defaultChecked={i === 0}
           />
           <div className="tab-content bg-base-100 border-base-300 p-6">
@@ -132,15 +135,17 @@ export default function Home() {
       <div className="flex items-center justify-center">
         <div className="uppercase font-bold text-5xl">
           <h2 className="text-right text-secondary">
-            {bossTier === "G6" ? "Gigantamax" : "Dynamax"}
+            {battleConfig.bossTier === "G6" ? "Gigantamax" : "Dynamax"}
           </h2>
-          <h1 className="text-right text-primary-content">{bossName}</h1>
+          <h1 className="text-right text-primary-content">
+            {battleConfig.bossName}
+          </h1>
         </div>
 
         <div className="relative h-[256px] w-[256px]">
           <img
             className="z-0 absolute top-[16px] right-0 h-[50%] w-[50%]"
-            src={bossTier === "G6" ? gmax_png.src : dmax_png.src}
+            src={battleConfig.bossTier === "G6" ? gmax_png.src : dmax_png.src}
           />
           <img
             className="z-10 absolute dmax-icon"
