@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
-    "start": "next start",
+    "build": "node ./scripts/process-preval-files.js ./src",
+    "start": "npx serve@latest out",
     "lint": "next lint",
     "lint-staged": "lint-staged",
     "prepare": "husky"

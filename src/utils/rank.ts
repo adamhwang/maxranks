@@ -120,7 +120,10 @@ export const rankPokemon = (myPokemon: PokeStats[], settings: BattleConfig) => {
 
       const fms = (mon.fastMoves ?? [])
         .map((fm) => getFM(fm))
-        .filter((fm) => !!fm);
+        .filter(
+          (fm): fm is ReturnType<typeof getFM> & { power: number } =>
+            fm?.power != null,
+        );
       return fms.map((fm) => {
         const maxType = my.maxMove.startsWith("G") ? mon.gmaxMoveType : fm.type;
         if (!maxType) return;
@@ -140,56 +143,61 @@ export const rankPokemon = (myPokemon: PokeStats[], settings: BattleConfig) => {
 
         let avgFmDamage = 0;
         let avgFmCount = 0;
-        const tankStats = bossCMs.reduce(
-          (acc, cm) => {
-            const spreadDamage = getDamange(
-              bossMon.types as PokemonType[],
-              cm.type as PokemonType,
-              bossStats.attack,
-              cm.power,
-              settings.weather,
-              defense,
-              mon.types as PokemonType[],
-            );
-            const targetedDamage =
-              (spreadDamage *
-                settings.targetDamageMultiplier *
-                (1 - settings.dodgeRate) +
-                spreadDamage *
-                  settings.targetDamageMultiplier *
-                  settings.dodgeRate *
-                  settings.dodgeMultiplier) *
-              (1 / settings.trainers / 3); // # of trainers * 3 pokemon each = prob of targeted attack
-            const bossDamage =
-              spreadDamage * (1 - settings.targetedRate) +
-              targetedDamage * settings.targetedRate;
-            const attacksTanked = getAttacksTanked(hp, bossDamage);
-            const tof = attacksTanked * (baseAttackRate + cm.duration);
-
-            const fmDamage =
-              Math.floor(tof / fm.duration) *
-              getDamange(
-                mon.types as PokemonType[],
-                fm.type as PokemonType,
-                attack,
-                fm.power,
-                settings.weather,
-                bossStats.defense,
+        const tankStats = bossCMs
+          .filter(
+            (cm): cm is ReturnType<typeof getCM> & { power: number } =>
+              cm?.power != null,
+          )
+          .reduce(
+            (acc, cm) => {
+              const spreadDamage = getDamange(
                 bossMon.types as PokemonType[],
+                cm.type as PokemonType,
+                bossStats.attack,
+                cm.power,
+                settings.weather,
+                defense,
+                mon.types as PokemonType[],
               );
+              const targetedDamage =
+                (spreadDamage *
+                  settings.targetDamageMultiplier *
+                  (1 - settings.dodgeRate) +
+                  spreadDamage *
+                    settings.targetDamageMultiplier *
+                    settings.dodgeRate *
+                    settings.dodgeMultiplier) *
+                (1 / settings.trainers / 3); // # of trainers * 3 pokemon each = prob of targeted attack
+              const bossDamage =
+                spreadDamage * (1 - settings.targetedRate) +
+                targetedDamage * settings.targetedRate;
+              const attacksTanked = getAttacksTanked(hp, bossDamage);
+              const tof = attacksTanked * (baseAttackRate + cm.duration);
 
-            // TODO: calculate max particles as 0.5% of boss hp
-            // TODO: compare max particles from fm + cm
-            const fmCount = Math.floor(tof / fm.duration);
-            avgFmCount += fmCount / bossCMs.length;
-            avgFmDamage += fmDamage / bossCMs.length;
-            acc[cm.name] = { tof, fmCount, fmDamage };
-            return acc;
-          },
-          {} as {
-            [cm: string]: { tof: number; fmCount: number; fmDamage: number };
-          },
-        );
+              const fmDamage =
+                Math.floor(tof / fm.duration) *
+                getDamange(
+                  mon.types as PokemonType[],
+                  fm.type as PokemonType,
+                  attack,
+                  fm.power,
+                  settings.weather,
+                  bossStats.defense,
+                  bossMon.types as PokemonType[],
+                );
+
+              // TODO: calculate max particles as 0.5% of boss hp
+              // TODO: compare max particles from fm + cm
+              const fmCount = Math.floor(tof / fm.duration);
+              avgFmCount += fmCount / bossCMs.length;
+              avgFmDamage += fmDamage / bossCMs.length;
+              acc[cm.name] = { tof, fmCount, fmDamage };
+              return acc;
+            },
+            {} as {
+              [cm: string]: { tof: number; fmCount: number; fmDamage: number };
+            },
+          );
 
         return {
           name: `${my.maxMove[0]}Max ${mon.name}`,

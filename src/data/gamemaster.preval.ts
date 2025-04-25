@@ -90,13 +90,13 @@ const getMove = (template: any) => {
   }: {
     movementId: string;
     pokemonType: string;
-    power: number;
+    power: number | null;
     durationMs: number;
   } = template.data.moveSettings;
   return {
     name: properMove(movementId),
     type: properType(pokemonType),
-    power,
+    power: power ?? null,
     duration: durationMs,
   };
 };

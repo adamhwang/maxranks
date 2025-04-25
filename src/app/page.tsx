@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, Suspense } from "react";
 import { useQueryState } from "nuqs";
 import {
   BattleConfig,
@@ -23,7 +23,15 @@ function toFixed(num: number, precision: number) {
   );
 }
 
-export default function Home() {
+export default function Page() {
+  return (
+    <Suspense>
+      <Home />
+    </Suspense>
+  );
+}
+
+function Home() {
   const [battleConfig] = useQueryState<BattleConfig>("config", {
     parse: JSON.parse,
     serialize: JSON.stringify,
